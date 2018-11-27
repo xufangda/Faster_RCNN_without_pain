@@ -23,7 +23,7 @@ class RoIPool(nn.Module):
         rois=rois.astype(np.int32)
         output=[]
         for i in range(rois.shape[0]):
-            x1,y1,x2,y2=rois[i]
+            x1, y1, x2, y2=rois[i]
             ret=self.admax2d(features[roi_indices[i],:,x1:x2,y1:y2])
             output.append(ret)
         

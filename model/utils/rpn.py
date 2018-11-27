@@ -60,7 +60,7 @@ class RPN(nn.Module):
         rois = np.concatenate(rois,axis=0)
         roi_indices=np.concatenate(roi_indices, axis=0)
 
-        return score, loc, rois,roi_indices, anchor
+        return score, loc, rois, roi_indices, anchor
 
 
 def _enumberate_shifted_anchor(anchor_base, feat_stride, height, width):

@@ -10,7 +10,7 @@ class ProposalCreator:
                  n_train_pre_nms=12000,
                  n_train_post_nms=1000,
                  n_test_pre_nms=6000,
-                 n_test_post_nms=300,
+                 n_test_post_nms=300, # due to the limited memory, n_test_post_nms is reduced to 50
                  min_size=16
                  ):
         self.parent_model=parent_model
