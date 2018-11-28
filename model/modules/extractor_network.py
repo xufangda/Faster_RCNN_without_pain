@@ -7,9 +7,7 @@ from torchvision.models.vgg import vgg16
 
 
 def decom_vgg(use_drop=False):
-
     vggNet= vgg16(pretrained=True)
-
     features=vggNet.features
     features=nn.Sequential(*list(features.children())[:-1])
     # disable auto grad for first 9 layers
@@ -27,6 +25,9 @@ def decom_vgg(use_drop=False):
     
     return features, classifier
 
-FeatureNet, ClassifierNet = decom_vgg()
-FeatureNet
+def FeatureNet():
+    FeatureNet, _ = decom_vgg()
+    return FeatureNet
+
+_ , ClassifierNet = decom_vgg()
 ClassifierNet

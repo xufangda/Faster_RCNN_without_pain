@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-class RoIPool(nn.Module):
+class RoIPooling2D(nn.Module):
     def __init__(self, size=(7,7), spatial_scale=1.0 / 16.0):
         super().__init__()
         self.admax2d=nn.AdaptiveMaxPool2d(size)

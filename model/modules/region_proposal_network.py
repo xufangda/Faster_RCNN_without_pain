@@ -2,18 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from model.utils.anchor_generator import anchor_generator
-import numpy as np
 from model.utils.proposal_creator import ProposalCreator
+
+import cupy as cp
+import numpy as np
 
 class RPN(nn.Module):
     """
     Arg:
-        - featureMap: (N, C, H, W)
+        - featureMap: (N, C, HH, WW)
     Return:
-        - score: (N*H*W*9, 2)
-        - loc: (N*H*W*9, 4)
+        - score: (N*HH*WW*9, 2)
+        - loc: (N*HH*WW*9, 4)
     """
-    def __init__(self,in_channel=512,mid_channel=512, feat_stride=16, n_anchor=9,proposal_creator_params=dict()):
+    def __init__(self,in_channel=512, mid_channel=512, 
+                 feat_stride=16, n_anchor=9, 
+                 proposal_creator_params=dict()):
+
         super().__init__()
         self.conv1=nn.Conv2d(in_channel, mid_channel, kernel_size=3, stride=1, padding=1)
         self.score=nn.Conv2d(mid_channel, 2*n_anchor, kernel_size=1, stride=1, padding=0)
@@ -21,20 +26,19 @@ class RPN(nn.Module):
         self.anchor_base= anchor_generator()
         self.feat_stride=feat_stride
         self.proposal_layer=ProposalCreator(self,**proposal_creator_params)
+        
         normal_init(self.conv1, 0, 0.001)
         normal_init(self.score, 0, 0.001)
         normal_init(self.loc, 0, 0.001)
 
     def forward(self, featureMap, img_size, scale=1.):
-        
-        
-        N,C,H,W=featureMap.shape
+        N, C, HH, WW=featureMap.shape
         feature = self.conv1(featureMap)
         score = self.score(feature)
         loc = self.loc(feature)
         anchor= _enumberate_shifted_anchor(
             np.array(self.anchor_base),
-            self.feat_stride, H, W
+            self.feat_stride, HH, WW
         )
 
 
@@ -44,17 +48,20 @@ class RPN(nn.Module):
         fg_score=score[:,:,1]
 
 
+        loc_d=loc.detach().cpu().data.numpy()
+        fg_score_d=fg_score.detach().cpu().data.numpy()
+        
         rois=list()
         roi_indices=list()
-
         for i in range(N):
             roi = self.proposal_layer(
-                loc[i].cpu().data.numpy(),
-                fg_score[i].cpu().data.numpy(),
+                loc_d[i],
+                fg_score_d[i],
                 anchor, img_size,
                 scale=scale
             )
             batch_index = i * np.ones((len(roi),), dtype=np.int32)
+            
             rois.append(roi)
             roi_indices.append(batch_index)
 
@@ -98,7 +105,6 @@ def normal_init(m, mean, stddev, truncated=False):
     """
     weight initilizer: truncated normal and random normal
     """
-
     if truncated:
         m.weight.data.normal_().fmod_(2).mul_(stddev).add_(mean)
     else:

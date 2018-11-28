@@ -43,7 +43,7 @@ class FasterRCNN(nn.Module):
 
         return bboxes, labels, scores
 
-    def get_optimizer(self):
+    def get_optimizer(self, lr=1e-3):
         """
         return optimizer, It could be overwriten if you want to specify 
         special optimizer
@@ -53,9 +53,9 @@ class FasterRCNN(nn.Module):
         for key, value in dict(self.named_parameters()).items():
             if value.requires_grad:
                 if 'bias' in key:
-                    params += [{'params': [value], 'lr': 1e-3 * 2, 'weight_decay': 0}]
+                    params += [{'params': [value], 'lr': lr * 2, 'weight_decay': 0}]
                 else:
-                    params += [{'params': [value], 'lr': 1e-3, 'weight_decay': 0.1}]
+                    params += [{'params': [value], 'lr': lr, 'weight_decay': 0.1}]
 
         self.optimizer = torch.optim.SGD(params, momentum=0.9)
         return self.optimizer
