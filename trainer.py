@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from collections import namedtuple
 from utils import array_tool as at
 from model.utils.anchor_target_creator import AnchorTargetCreator
+from model.utils.proposal_target_creator import ProposalTargetCreator
 import os
 import time
 
@@ -20,9 +21,11 @@ class FasterRCNNTrainer(nn.Module):
         super().__init__()
         self.faster_rcnn = faster_rcnn
         self.rpn_sigma = rpn_sigma
-        self.head_sigma = head_sigma
+        self.roi_sigma = head_sigma
         self.anchor_target_creator = AnchorTargetCreator()
-    
+        self.proposal_target_creator= ProposalTargetCreator()
+        self.optimizer = torch.optim.SGD(faster_rcnn.parameters(),lr=0.001, momentum=0.9)
+        
     def forward(self, imgs, bboxes, labels, scale):
         n = bboxes.shape[0]
         if n != 1:
@@ -58,6 +61,7 @@ class FasterRCNNTrainer(nn.Module):
         # Sample RoIs and forward
         # it's fine to break the computation graph of rois, 
         # consider them as constant input
+        
         sample_roi, gt_roi_loc, gt_roi_label = self.proposal_target_creator(
             roi,
             at.tonumpy(bbox),
@@ -73,7 +77,8 @@ class FasterRCNNTrainer(nn.Module):
         # ------------------ ROI losses (fast rcnn loss) -------------------#
         n_sample = roi_cls_loc.shape[0]
         roi_cls_loc = roi_cls_loc.view(n_sample, -1, 4)
-        roi_loc = roi_cls_loc[torch.arange(0, n_sample).long.cuda(),
+        
+        roi_loc = roi_cls_loc[torch.arange(0, n_sample).long().cuda(),
                               at.totensor(gt_roi_label).long()]
 
         gt_roi_label = at.totensor(gt_roi_label).long()
@@ -94,59 +99,59 @@ class FasterRCNNTrainer(nn.Module):
         return LossTuple(*losses)
 
 
-        def train_step(self, imgs, bboxes, labels, scale):
-            self.optimizer.zero_grad()
-            losses = self.forward(imgs, bboxes, labels, scale)
-            losses.total_loss.backward()
-            self.optimizer.step()
-            return losses
+    def train_step(self, imgs, bboxes, labels, scale):
+        self.optimizer.zero_grad()
+        losses = self.forward(imgs, bboxes, labels, scale)
+        losses.total_loss.backward()
+        self.optimizer.step()
+        return losses
 
-        def save(self, save_optimizer=False, save_path=None, **kwargs):
-            """serialize models include optimizer and other info
-            return path where the model-file is stored.
+    def save(self, save_optimizer=False, save_path=None, **kwargs):
+        """serialize models include optimizer and other info
+        return path where the model-file is stored.
 
-            Args:
-                save_optimizer (bool): whether save optimizer.state_dict().
-                save_path (string): where to save model, if it's None, save_path
-                    is generate using time str and info from kwargs.
-            
-            Returns:
-                save_path(str): the path to save models.
-            """
-            save_dict = dict()
+        Args:
+            save_optimizer (bool): whether save optimizer.state_dict().
+            save_path (string): where to save model, if it's None, save_path
+                is generate using time str and info from kwargs.
+        
+        Returns:
+            save_path(str): the path to save models.
+        """
+        save_dict = dict()
 
-            save_dict['model'] = self.faster_rcnn.state_dict()
-            save_dict['other_info'] = kwargs
-            # save_dict['vis_info'] = self.vis.state_dict()
+        save_dict['model'] = self.faster_rcnn.state_dict()
+        save_dict['other_info'] = kwargs
+        # save_dict['vis_info'] = self.vis.state_dict()
 
-            if save_optimizer:
-                save_dict['optimizer'] = self.optimizer.state_dict()
+        if save_optimizer:
+            save_dict['optimizer'] = self.optimizer.state_dict()
 
-            if save_path is None:
-                timestr = time.strftime('%m%d%H%M')
-                save_path = 'checkpoints/fasterrcnn_%s' % timestr
-                for k_, v_ in kwargs.items():
-                    save_path += '_%s' % v_
+        if save_path is None:
+            timestr = time.strftime('%m%d%H%M')
+            save_path = 'checkpoints/fasterrcnn_%s' % timestr
+            for k_, v_ in kwargs.items():
+                save_path += '_%s' % v_
 
-            save_dir = os.path.dirname(save_path)
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
-            torch.save(save_dict, save_path)
-            # self.vis.save([self.vis.env])
-            return save_path
+        torch.save(save_dict, save_path)
+        # self.vis.save([self.vis.env])
+        return save_path
 
-        def load(self, path, load_optimizer=True, parse_opt=False, ):
-            state_dict = torch.load(path)
-            if 'model' in state_dict:
-                self.faster_rcnn.load_state_dict(state_dict['model'])
-            else:  # legacy way, for backward compatibility
-                self.faster_rcnn.load_state_dict(state_dict)
-                return self
-
-            if 'optimizer' in state_dict and load_optimizer:
-                self.optimizer.load_state_dict(state_dict['optimizer'])
+    def load(self, path, load_optimizer=True, parse_opt=False, ):
+        state_dict = torch.load(path)
+        if 'model' in state_dict:
+            self.faster_rcnn.load_state_dict(state_dict['model'])
+        else:  # legacy way, for backward compatibility
+            self.faster_rcnn.load_state_dict(state_dict)
             return self
+
+        if 'optimizer' in state_dict and load_optimizer:
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+        return self
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
     sigma2 = sigma ** 2

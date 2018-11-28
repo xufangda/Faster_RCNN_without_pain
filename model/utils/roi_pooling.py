@@ -22,9 +22,11 @@ class RoIPool(nn.Module):
         rois=rois*self.spatial_scale
         rois=rois.astype(np.int32)
         output=[]
+        # roi_indices = roi_indices.cpu().numpy().astype(np.int32)
+        roi_indices=roi_indices.to(dtype=torch.long)
         for i in range(rois.shape[0]):
             x1, y1, x2, y2=rois[i]
-            ret=self.admax2d(features[roi_indices[i],:,x1:x2,y1:y2])
+            ret=self.admax2d(features[roi_indices[i],:,y1:y2,x1:x2])
             output.append(ret)
         
         output=torch.stack(output,dim=0)

@@ -19,8 +19,8 @@ def bbox2loc(src_bbox, dst_bbox):
 
     dy = (base_ctr_y - ctr_y) / height
     dx = (base_ctr_x - ctr_x) / width
-    dh = xp.log(base_height / height)
-    dw = xp.log(base_width / width)
+    dh = np.log(base_height / height)
+    dw = np.log(base_width / width)
 
-    loc = np.vstack((dy, dx, dh, dw)).transpose
+    loc = np.vstack((dy, dx, dh, dw)).transpose()
     return loc    

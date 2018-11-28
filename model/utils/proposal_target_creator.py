@@ -1,6 +1,7 @@
 import torch 
 import numpy as np
-import bbox_iou
+from model.utils.bbox_iou import bbox_iou
+from model.utils.bbox2loc import bbox2loc
 
 class ProposalTargetCreator(object):
     """Assign ground truth bounding boxes to given RoIs.
@@ -112,13 +113,14 @@ class ProposalTargetCreator(object):
         # The indices that we're selecting (both positive and negative).
         keep_index = np.append(pos_index, neg_index)
         gt_roi_label = gt_roi_label[keep_index]
-        gt_roi_label =[pos_roi_per_this_img:] = 0 # negative labels --> 0
+        gt_roi_label[pos_roi_per_this_img:] = 0 # negative labels --> 0
         sample_roi = roi[keep_index]
 
          # Compute offsets and scales to match sampled RoIs to the GTs.
-         gt_roi_loc = bbox2loc(sample_roi, bbox[gt_assignment[keep_index]])
+        gt_roi_loc = bbox2loc(sample_roi, bbox[gt_assignment[keep_index]])
          
         #  gt_roi_loc = ((gt_roi_loc - np.array(loc_normalize_mean, np.float32)
         #                ) / np.array(loc_normalize_std, np.float32))
 
         return sample_roi, gt_roi_loc, gt_roi_label
+        

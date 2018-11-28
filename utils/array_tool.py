@@ -14,7 +14,7 @@ def tonumpy(data):
 
 def totensor(data, cuda=True):
     if isinstance(data, np.ndarray):
-        tensor = t.from_numpy(data)
+        tensor = t.from_numpy(data).to(dtype=t.float)
     if isinstance(data, t.Tensor):
         tensor = data.detach()
     if cuda:
