@@ -6,13 +6,14 @@ from model.utils.vgg_decompose import ClassifierNet
 from model.utils.roi_pooling import RoIPool
 
 class VGG_RoI_Head(nn.Module):
+    """
+    Args:
+        - n_class: n_class, please note you should add one more class for background 
+        e.g.: cat, dog should be 3 for [background, cat, dog]
+        - use_drop: default False, decide whether use the dropout or not
+    """
     def __init__(self,n_class,VGG_classifer=ClassifierNet, use_drop=False):
-        """
-        Args:
-         - n_class: n_class, please note you should add one more class for background 
-           e.g.: cat, dog should be 3 for [background, cat, dog]
-         - use_drop: default False, decide whether use the dropout or not
-        """
+        
         super().__init__()
         self.RoIPool=RoIPool()
         self.pre_classifier=VGG_classifer

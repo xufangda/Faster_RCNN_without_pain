@@ -2,7 +2,7 @@ import numpy as np
 import cupy as cp
 import torch
 import torch.nn.functional as F
-from model.utils.bbox_tool import loc2bbox
+from model.utils.loc2bbox import loc2bbox
 from model.utils.nms import non_maximum_suppression
 
 def suppression(rois,

@@ -1,7 +1,7 @@
 import numpy as np
 import cupy as cp
 from model.utils.nms import non_maximum_suppression
-from model.utils.bbox_tool import loc2bbox
+from model.utils.loc2bbox import loc2bbox
 
 class ProposalCreator:
     def __init__(self, 
@@ -64,14 +64,4 @@ class ProposalCreator:
             keep = keep[:n_post_nms]
         roi=roi[keep]
         return roi
-
-
-
-
-
-
-
-
-
-
-
+        

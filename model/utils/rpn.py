@@ -3,9 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.utils.anchor_generator import anchor_generator
 import numpy as np
-from model.utils.creator_tool import ProposalCreator
+from model.utils.proposal_creator import ProposalCreator
 
 class RPN(nn.Module):
+    """
+    Arg:
+        - featureMap: (N, C, H, W)
+    Return:
+        - score: (N*H*W*9, 2)
+        - loc: (N*H*W*9, 4)
+    """
     def __init__(self,in_channel=512,mid_channel=512, feat_stride=16, n_anchor=9,proposal_creator_params=dict()):
         super().__init__()
         self.conv1=nn.Conv2d(in_channel, mid_channel, kernel_size=3, stride=1, padding=1)
@@ -19,13 +26,7 @@ class RPN(nn.Module):
         normal_init(self.loc, 0, 0.001)
 
     def forward(self, featureMap, img_size, scale=1.):
-        """
-        Arg:
-            - featureMap: (N, C, H, W)
-        Return:
-            - score: (N*H*W*9, 2)
-            - loc: (N*H*W*9, 4)
-        """
+        
         
         N,C,H,W=featureMap.shape
         feature = self.conv1(featureMap)
