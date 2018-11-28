@@ -24,9 +24,10 @@ class FasterRCNNTrainer(nn.Module):
         self.roi_sigma = head_sigma
         self.anchor_target_creator = AnchorTargetCreator()
         self.proposal_target_creator= ProposalTargetCreator()
-        self.optimizer = torch.optim.SGD(faster_rcnn.parameters(),lr=0.001, momentum=0.9)
+        self.optimizer = faster_rcnn.get_optimizer()
         
     def forward(self, imgs, bboxes, labels, scale):
+        
         n = bboxes.shape[0]
         if n != 1:
             raise ValueError('Currently only batch size 1 is supported')
@@ -34,8 +35,8 @@ class FasterRCNNTrainer(nn.Module):
         _, _, H, W = imgs.shape
         img_size = (H, W)
 
-        featureMap = self.faster_rcnn.featureNet(imgs)
-        rpn_scores, rpn_locs, rois, roi_indices, anchor = self.faster_rcnn.rpn(featureMap, img_size)
+        featureMap = self.faster_rcnn.extractor(imgs)
+        rpn_locs, rpn_scores, rois, roi_indices, anchor = self.faster_rcnn.rpn(featureMap, img_size)
 
         bbox = bboxes[0]
         label = labels[0]
@@ -138,7 +139,6 @@ class FasterRCNNTrainer(nn.Module):
             os.makedirs(save_dir)
 
         torch.save(save_dict, save_path)
-        # self.vis.save([self.vis.env])
         return save_path
 
     def load(self, path, load_optimizer=True, parse_opt=False, ):

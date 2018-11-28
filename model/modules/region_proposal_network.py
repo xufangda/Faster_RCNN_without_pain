@@ -41,7 +41,6 @@ class RPN(nn.Module):
             self.feat_stride, HH, WW
         )
 
-
         loc = loc.permute(0,2,3,1).contiguous().view(N, -1, 4)
         score= score.permute(0,2,3,1).contiguous().view(N,-1,2)
         score= F.softmax(score, dim=2)

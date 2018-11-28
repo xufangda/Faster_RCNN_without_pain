@@ -7,6 +7,13 @@ import cupy as cp
 from model.utils.loc2bbox import loc2bbox
 from model.utils.nms import non_maximum_suppression
 
+
+def nograd(f):
+    def new_f(*args,**kwargs):
+        with torch.no_grad():
+           return f(*args,**kwargs)
+    return new_f
+
 class FasterRCNN(nn.Module):
     """Base class for Faster R-CNN.
 
@@ -25,7 +32,7 @@ class FasterRCNN(nn.Module):
                  loc_normalize_mean=(0., 0., 0., 0.),
                  loc_normalize_std = (0.1, 0.1, 0.2, 0.2)
                 ):
-                      
+        super().__init__()
         self.extractor = extractor
         self.rpn = rpn
         self.head = head
@@ -60,6 +67,7 @@ class FasterRCNN(nn.Module):
         )
         return final_locs, final_scores, rois, roi_indices
     
+    @nograd
     def predict(self, imgs):
         
         N, C, H, W = imgs.shape   
@@ -74,28 +82,28 @@ class FasterRCNN(nn.Module):
                                                    img_number)
         return bboxes, labels, scores
 
-def get_optimizer(self):
-        """
-        return optimizer, It could be overwriten if you want to specify 
-        special optimizer
-        """
-        
-        params = []
-        for key, value in dict(self.named_parameters()).items():
-            if value.requires_grad:
-                if 'bias' in key:
-                    params += [{'params': [value], 'lr': 1e-3 * 2, 'weight_decay': 0}]
-                else:
-                    params += [{'params': [value], 'lr': 1e-3, 'weight_decay': 0.1}]
+    def get_optimizer(self):
+            """
+            return optimizer, It could be overwriten if you want to specify 
+            special optimizer
+            """
+            
+            params = []
+            for key, value in dict(self.named_parameters()).items():
+                if value.requires_grad:
+                    if 'bias' in key:
+                        params += [{'params': [value], 'lr': 1e-3 * 2, 'weight_decay': 0}]
+                    else:
+                        params += [{'params': [value], 'lr': 1e-3, 'weight_decay': 0.1}]
 
-        self.optimizer = torch.optim.SGD(params, momentum=0.9)
-        return self.optimizer
+            self.optimizer = torch.optim.SGD(params, momentum=0.9)
+            return self.optimizer
 
     def _suppression(self, rois, roi_indices,
-                     final_locs, final_scores,
-                     img_size,
-                     img_number,
-                     high_thresh=True):
+                        final_locs, final_scores,
+                        img_size,
+                        img_number,
+                        high_thresh=True):
         """
         rois: numpy.ndarray(N, 4)
         roi_indices: numpy.ndarray(N)

@@ -77,13 +77,12 @@ class RoI(Function):
 
 class RoIPooling2D(t.nn.Module):
 
-    def __init__(self, outh, outw, spatial_scale):
+    def __init__(self, outh=7, outw=7, spatial_scale=1.0/16.0):
         super(RoIPooling2D, self).__init__()
         self.RoI = RoI(outh, outw, spatial_scale)
 
     def forward(self, x, rois):
         return self.RoI(x, rois)
-
 
 def test_roi_module():
     ## fake data###
